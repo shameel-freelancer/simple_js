@@ -8,37 +8,44 @@
 </head>
 <body>
     <h1 id="hello">Hello</h1>
+    <form id="myForm">
+        <input type="text" name="Name" id="Name">
+        <input type="number" name="Age" id="Age">
+        <input type="radio" name="Gender" id="GenderMale" value="Male">
+        <input type="radio" name="Gender" id="GenderFemale" value="Female">
+        <input type="file" name="File" id="">
+        <input type="range" name="Range" id="" min="0" max="10">
+        <select name="Qualification" id="Qualification">
+            <option value="">Select</option>
+            <option value="Degree">Degree</option>
+            <option value="PG">PG</option>
+        </select>
+        <textarea name="Address" id="Address" cols="30" rows="10"></textarea>
+    </form>
     <script src="main.js"></script>
     <script>
-        setTimeout(() => {
-            $.get("test.php","json")
-            .done((res,status,xhr)=>{
-                $("#hello").html(res.msg,"success");
-            })
-            .fail((xhr,status,error)=>{
-                console.log("this is in fail");
-            })
-            .always((one,two,three)=>{
-                console.log("this is in always");
-            })
-        }, 1000);
-        // $.ajax({
-        //     url:"test.html",
-        //     type:"post",
-        //     dataType:"json",
-        //     beforeSend:function(){
-        //         console.log("Before Send");
-        //     },
-        //     success: function(){
-        //         console.log("On Success");
-        //     }
-        // }).done((res)=>{
-        //     console.log("Done")
-        // }).fail((err)=>{
-        //     console.log("Fail")
-        // }).always((res)=>{
-        //     console.log("Always")
-        // });
+        var resp;
+        $.ajax({
+            url:"test.php",
+            type:"post",
+            dataType:"json",
+            data:new FormData($("#myForm")[0]),
+            contentType:false,
+            processData:false,
+            beforeSend:function(){
+                console.log("Before Send");
+            },
+            success: function(res){
+                console.log("On Success",res);
+                resp = res;
+            }
+        }).done((res)=>{
+            console.log("Done")
+        }).fail((err)=>{
+            console.log("Fail")
+        }).always((res)=>{
+            console.log("Always")
+        });
     </script>
 </body>
 </html>

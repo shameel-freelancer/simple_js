@@ -115,6 +115,22 @@ class ShameelSalih extends Array{
         if(!this.undefinedOrNull(this[0]) && !this.undefinedOrNull(this[0].offsetWidth)) return this[0].offsetWidth;
         return undefined;
     };
+    val(value){
+        if("undefined" != typeof value){
+            this.forEach(element => element.value = value);
+            return this;
+        }
+        if("undefined" === typeof this[0]) return "";
+        return this[0].value;
+    };
+    serialize(){
+        let formData = new FormData(this[0]);
+        let serialize=[];
+        for (let entry of formData.entries()) {
+            if("string" === typeof entry[1]) serialize.push(`${entry[0]}=${encodeURIComponent(entry[1])}`);
+        }
+        return serialize.join("&");
+    };
 }
 function $(param){
     if("string" === typeof param || param instanceof String ){
@@ -124,8 +140,15 @@ function $(param){
     }
 }
 class AjaxPromise{
-    constructor(promise){
+    constructor(promise,settings={}){
         this.promise = promise;
+        this.promise.then(data=>{
+            if("function" === typeof settings.success) settings.success(data.one,data.two,data.three);
+            return data;
+        }).catch(data=>{
+            if("function" === typeof settings.error) settings.error(data.one,data.two,data.three);
+            return data;
+        })
     }
     done(cb){
         this.promise = this.promise.then(data => {
@@ -152,7 +175,7 @@ class AjaxPromise{
     }
 }
 $.get = function(url,success=()=>{},dataType=""){
-    if("json" === success){
+    if("string" == typeof success && "json" === success.toLowerCase()){
         dataType = success;
         success = ()=>{};
     }
@@ -183,8 +206,7 @@ $.get = function(url,success=()=>{},dataType=""){
                     }
                 }
             };
-            xhr.open('GET', url);
-            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
+            xhr.open('GET', url,true);
             xhr.send();
         }).then(data=>{
             success(data.one,data.two,data.three);
@@ -193,12 +215,25 @@ $.get = function(url,success=()=>{},dataType=""){
     )
 }
 $.post = function(url,dataOrSuccess="",success=()=>{},dataType=""){
-    let contentType = "application/x-www-form-urlencoded";
     if("function" === typeof dataOrSuccess){
         dataType = success;
         success = dataOrSuccess;
+        dataOrSuccess = "";
     }
-    else if("object" === typeof dataOrSuccess) contentType = "application/json";
+    else if("json" === dataOrSuccess.toLowerCase()){
+        dataType = dataOrSuccess;
+        dataOrSuccess = "";
+        success =()=>{};
+    }
+    else if("strning" === typeof success && "json" === success.toLowerCase()){
+        dataType = success;
+        success =()=>{};
+    }
+    else if("object" === typeof dataOrSuccess){
+        dataOrSuccess = Object.entries(dataOrSuccess).map(([key,value])=>{
+            return `${key}=${value}`;
+        }).join("&")
+    }
     return new AjaxPromise(
         new Promise((resolve,reject)=>{
             xhr = new XMLHttpRequest();
@@ -226,12 +261,56 @@ $.post = function(url,dataOrSuccess="",success=()=>{},dataType=""){
                     }
                 }
             };
-            xhr.open('POST', url);
-            xhr.setRequestHeader('Content-Type', contentType);
-            xhr.send();
+            xhr.open('POST', url,true);
+            xhr.send(dataOrSuccess);
         }).then(data=>{
             success(data.one,data.two,data.three);
             return data;
         })
+    )
+}
+$.ajax = function(url,settings){
+    if("object" === typeof url){
+        settings = url;
+        url = settings.url;
+    }
+    else{
+        if("object" !== typeof settings) settings = {};
+    }
+    return new AjaxPromise(
+        new Promise((resolve,reject)=>{
+            xhr = new XMLHttpRequest();
+            if (!xhr) {
+                throw new Error("Ajax not Supported");
+            }
+            xhr.onreadystatechange = function(){
+                if(xhr.readyState === XMLHttpRequest.DONE){
+                    if(xhr.status === 200){
+                        if(("undefined" === typeof settings.dataType?"":settings.dataType.toLowerCase()) == "json"){
+                            try{
+                                resolve({one:JSON.parse(xhr.response),two:xhr.statusText,three:xhr});
+                            }
+                            catch(e){
+                                reject({one:xhr,two:xhr.statusText,three:e});
+                                throw Error(e);
+                            }
+                        }
+                        else{
+                            resolve({one:xhr.response,two:xhr.statusText,three:xhr});
+                        }
+                    }
+                    else{
+                        reject({one:xhr,two:xhr.statusText});
+                    }
+                }
+            };
+            if("object" === typeof settings.data && ("undefined" === typeof settings.processData || ("undefined" !== typeof settings.processData && settings.processData === true)) ) settings.data = Object.entries(settings.data).map(([key,value])=>`${key}=${value}` ).join("&");
+            let type = "undefined" == typeof settings.type?"GET":settings.type;
+            xhr.open(type, url+(type.toLowerCase() === "get"?`?${settings.data}`:""), true);
+            if("undefined" !== typeof settings.contentType && settings.contentType !== false) xhr.setRequestHeader('Content-Type', "undefined" === typeof settings.contentType?"application/x-www-form-urlencoded":settings.contentType);
+            if("function" === typeof settings.success) settings.beforeSend();
+            xhr.send("undefined" === typeof settings.data?"":settings.data);
+        }),
+        settings
     )
 }
