@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1 id="hello">Hello</h1>
+    <script src="main.js"></script>
+    <script>
+        setTimeout(() => {
+            $.get("test.php","json")
+            .done((res,status,xhr)=>{
+                $("#hello").html(res.msg,"success");
+            })
+            .fail((xhr,status,error)=>{
+                console.log("this is in fail");
+            })
+            .always((one,two,three)=>{
+                console.log("this is in always");
+            })
+        }, 1000);
+        // $.ajax({
+        //     url:"test.html",
+        //     type:"post",
+        //     dataType:"json",
+        //     beforeSend:function(){
+        //         console.log("Before Send");
+        //     },
+        //     success: function(){
+        //         console.log("On Success");
+        //     }
+        // }).done((res)=>{
+        //     console.log("Done")
+        // }).fail((err)=>{
+        //     console.log("Fail")
+        // }).always((res)=>{
+        //     console.log("Always")
+        // });
+    </script>
+</body>
+</html>
